@@ -1,0 +1,82 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ book.name }}{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>{{ book.name }}</h2>
+        {% if book.series %}
+        <p class="text-muted">Series: {{ book.series }}</p>
+        {% endif %}
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'edit_book' book.pk %}" class="btn btn-warning">Edit</a>
+        <form method="post" action="{% url 'parse_book' book.pk %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Parse Now</button>
+        </form>
+        <a href="{% url 'book_list' %}" class="btn btn-secondary">Back to List</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Book Details</h5>
+    </div>
+    <div class="card-body">
+        <p><strong>URL:</strong> <a href="{{ book.url }}" target="_blank">{{ book.url }}</a></p>
+        <p><strong>Added:</strong> {{ book.created_at }}</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Parsed Results</h5>
+    </div>
+    <div class="card-body">
+        <div class="mb-4">
+            <p><strong>Parse Status:</strong> 
+                <span class="badge {% if book.parse_status == 'completed' %}bg-success{% elif book.parse_status == 'error' %}bg-danger{% elif book.parse_status == 'in progress' %}bg-warning{% else %}bg-secondary{% endif %}">
+                    {{ book.parse_status|default:"Not Parsed" }}
+                </span>
+            </p>
+            <p><strong>Last Parsed:</strong> {{ book.parsed_at }}</p>
+            <p><strong>Rating:</strong> {{ book.rating }} / 5</p>
+            <p><strong>Reviews Count:</strong> {{ book.reviews_count }}</p>
+        </div>
+
+        <div class="mb-4">
+            <h6>Best Seller Ranks</h6>
+            <div class="bg-light p-3 rounded">
+                {% for rank in book.best_seller_ranks %}
+                <div class="rank-item">
+                    <span class="fw-bold {% if rank.place|add:'0' < 100 %}text-success{% endif %}">#{{ rank.place }}</span> <span class="text-muted">{{ rank.rank_name }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h6>Popular Reviews</h6>
+            <div class="row g-3">
+                {% for review in book.popular_reviews %}
+                <div class="col-md-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-0">{{ review.reviewer_name }}</h6>
+                                <span class="badge bg-primary">{{ review.starts_value }}</span>
+                            </div>
+                            <h6 class="text-muted mb-2">{{ review.review_title }}</h6>
+                            <p class="card-text">{{ review.review_content }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %} 

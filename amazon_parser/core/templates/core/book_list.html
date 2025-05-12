@@ -1,0 +1,180 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Books List{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>Books</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'add_book' %}" class="btn btn-primary">Add Book</a>
+        <form method="post" action="{% url 'parse_all_books' %}" class="d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Parse All Books</button>
+        </form>
+    </div>
+</div>
+
+<!-- Filter and Sort Controls -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Search books or series...">
+            </div>
+            <div class="col-md-2">
+                <label for="series" class="form-label">Series</label>
+                <select class="form-select" id="series" name="series">
+                    <option value="">All Series</option>
+                    {% for series in all_series %}
+                        <option value="{{ series }}" {% if series == series_filter %}selected{% endif %}>{{ series }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="language" class="form-label">Language</label>
+                <select class="form-select" id="language" name="language">
+                    <option value="">All Languages</option>
+                    {% for lang_code, lang_name in language_choices %}
+                        <option value="{{ lang_code }}" {% if lang_code == language_filter %}selected{% endif %}>{{ lang_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="date_from" class="form-label">Date From</label>
+                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label for="date_to" class="form-label">Date To</label>
+                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+            </div>
+            <div class="col-md-2">
+                <label for="sort" class="form-label">Sort By</label>
+                <select class="form-select" id="sort" name="sort">
+                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
+                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
+                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name (A-Z)</option>
+                    <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>Name (Z-A)</option>
+                    <option value="series__title" {% if sort_by == 'series__title' %}selected{% endif %}>Series (A-Z)</option>
+                    <option value="-series__title" {% if sort_by == '-series__title' %}selected{% endif %}>Series (Z-A)</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="{% url 'book_list' %}" class="btn btn-secondary">Clear Filters</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if page_obj %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Series</th>
+                    <th>Language</th>
+                    <th>Rating</th>
+                    <th>Number of Ratings</th>
+                    <th>Best Seller Ranks</th>
+                    <th>Popular Reviews</th>
+                    <th>Parsed At</th>
+                    <th>Parse Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for book in page_obj %}
+                <tr>
+                    <td><a href="{% url 'book_detail' book.pk %}">{{ book.name }}</a></td>
+                    <td>{{ book.series|default:"-" }}</td>
+                    <td>{{ book.language|default:"-" }}</td>
+                    <td>{{ book.rating|default:"-" }}</td>
+                    <td>{{ book.reviews_count|default:"-" }}</td>
+                    <!-- <td>{{ book.best_seller_ranks|default:"-"|truncatechars:50 }}</td> -->
+                    <td>
+                        {% for rank in book.best_seller_ranks %}
+                        <span class="fw-bold {% if rank.place|add:'0' < 100 %}text-success{% endif %}">#{{ rank.place }}</span> <span class="text-muted">{{ rank.rank_name }}</span>
+                        <br/>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if book.popular_reviews %}
+                        <span class="badge bg-primary">{{ book.popular_reviews|length }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">-</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ book.parsed_at|date:"M d, Y H:i"|default:"-" }}</td>
+                    <td>
+                        {% if book.parse_status == 'completed' %}
+                            <span class="badge bg-success">{{ book.parse_status }}</span>
+                        {% elif book.parse_status == 'in progress' %}
+                            <span class="badge bg-warning">{{ book.parse_status }}</span>
+                        {% elif book.parse_status == 'error' %}
+                            <span class="badge bg-danger">{{ book.parse_status }}</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ book.parse_status|default:"not parsed" }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ book.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        <a href="{% url 'book_detail' book.pk %}" class="btn btn-sm btn-info">View</a>
+                        <a href="{% url 'edit_book' book.pk %}" class="btn btn-sm btn-warning">Edit</a>
+                        <form method="post" action="{% url 'parse_book' book.pk %}" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success">Parse</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination with filter parameters -->
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">&laquo; first</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">previous</a>
+                </li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">next</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">last &raquo;</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+{% else %}
+    <div class="alert alert-info">
+        No books found matching your criteria. <a href="{% url 'book_list' %}">Clear filters</a> or <a href="{% url 'add_book' %}">add a new book</a>.
+    </div>
+{% endif %}
+{% endblock %} 
