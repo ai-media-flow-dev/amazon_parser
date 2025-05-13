@@ -115,3 +115,10 @@ def parse_all_books(request):
     
     messages.success(request, f'Parsing started for all {books.count()} books')
     return redirect('book_list')
+
+@require_POST
+def delete_book(request, pk):
+    book = get_object_or_404(Book, pk=pk)
+    book.delete()
+    messages.success(request, f'Book "{book.name}" was successfully deleted.')
+    return redirect('book_list')

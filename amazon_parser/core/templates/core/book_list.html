@@ -129,6 +129,10 @@
                             {% csrf_token %}
                             <button type="submit" class="btn btn-sm btn-success">Parse</button>
                         </form>
+                        <form method="post" action="{% url 'delete_book' book.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this book?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
                     </td>
                 </tr>
                 {% endfor %}

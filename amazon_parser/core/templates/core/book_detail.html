@@ -16,6 +16,10 @@
             {% csrf_token %}
             <button type="submit" class="btn btn-success">Parse Now</button>
         </form>
+        <form method="post" action="{% url 'delete_book' book.pk %}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this book?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
         <a href="{% url 'book_list' %}" class="btn btn-secondary">Back to List</a>
     </div>
 </div>
