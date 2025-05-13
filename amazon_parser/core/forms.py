@@ -23,7 +23,6 @@ class BookForm(forms.ModelForm):
         complete_url = f'https://www.amazon.{language}/dp/{book_id}?language=en_GB'
         self.cleaned_data['url'] = complete_url
         return self.cleaned_data
-        # match = re.search(r'(https://www\.amazon\.[^/]+/dp/\w+)', url)
         # if match:
             # return match.group(1) + '/?language=en_GB'
         # raise forms.ValidationError('URL must be a valid Amazon product URL')
@@ -38,6 +37,7 @@ class BookForm(forms.ModelForm):
 
     def save(self, commit=True) -> Book:
         instance = super().save(commit=False)
+        instance.url = self.cleaned_data.get('url')
         if series_title := self.cleaned_data.get('series_title'):
             series, _ = BookSeries.objects.get_or_create(title=series_title)
             instance.series = series

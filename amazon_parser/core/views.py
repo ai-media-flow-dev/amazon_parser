@@ -1,3 +1,5 @@
+import logging
+from django.db import IntegrityError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.http import require_POST
@@ -6,6 +8,8 @@ from django.db.models import Q
 from .models import Book, BookSeries, Language
 from .forms import BookForm
 from .tasks import parse_single_book, parse_all_books as parse_all_books_task
+
+logger = logging.getLogger(__name__)
 
 def book_list(request):
     # Get filter parameters
@@ -74,9 +78,14 @@ def add_book(request):
     if request.method == 'POST':
         form = BookForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Book added successfully!')
-            return redirect('book_list')
+            try:
+                form.save()
+                messages.success(request, 'Book added successfully!')
+                return redirect('book_list')
+            except IntegrityError as ex:
+                logger.error(f'An error occurred while adding a book', exc_info=ex)
+                form.add_error('book_id', 'Book with such url already exists')
+                return render(request, 'core/add_book.html', {'form': form})
     else:
         form = BookForm()
     
