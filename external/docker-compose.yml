@@ -14,4 +14,5 @@ services:
       - DEBUG=1
     volumes:
       - ./data/db:/app/amazon_parser/db
+      - ./data/pages:/app/amazon_parser/data
   

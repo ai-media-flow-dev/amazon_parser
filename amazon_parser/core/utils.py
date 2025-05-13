@@ -3,18 +3,55 @@
 Amazon KDP Parser with captcha avoidance techniques (no proxies)
 """
 from dataclasses import dataclass
-import json
 import logging
 import re
+from datetime import datetime
+from pathlib import Path
+from typing import Final
+
 import requests
 import time
 import random
 from bs4 import BeautifulSoup
 
+from amazon_parser.settings import BASE_DIR
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+########################################################################################################
+
+class HttpsProxyManager:
+    def __init__(self, proxy_list: list[str]):
+        """
+        Initialize with list of proxies in format "host:port:user:pass"
+        """
+        self.proxies = []
+        for proxy in proxy_list:
+            host, port, user, password = proxy.strip().split(':')
+            self.proxies.append({
+                'host': host,
+                'port': port,
+                'user': user,
+                'password': password
+            })
+
+    def get_proxy_dict(self, proxy: dict) -> dict:
+        """Convert proxy info into requests format for HTTPS only"""
+        auth = f"{proxy['user']}:{proxy['password']}"
+        # Format specifically for HTTPS proxy
+        proxy_url = f"http://{auth}@{proxy['host']}:{proxy['port']}"
+        return {
+            'http': proxy_url,
+            'https': proxy_url
+        }
+
+    def get_random_proxy(self) -> dict:
+        """Get a random proxy from the list"""
+        return self.get_proxy_dict(random.choice(self.proxies))
+    
+########################################################################################################
 
 @dataclass
 class ParsedResult:
@@ -27,11 +64,18 @@ class ParsedResult:
 class AmazonKDPParser:
     """Parser for Amazon KDP website with basic captcha avoidance."""
 
+    HTML_PAGES_DATA: Final[Path] = BASE_DIR / 'data'
 
     def __init__(self):
         """Initialize the parser with a requests session."""
+        self.proxy_manager = HttpsProxyManager([
+            "91.132.12.165:12323:14a0693892686:42fbec1479",
+            "141.98.58.86:12323:14a0693892686:42fbec1479",
+            "205.233.201.252:12323:14a0693892686:42fbec1479",
+        ])
         self.session = requests.Session()
         self.configure_session()
+        self._page_title = None
 
     def configure_session(self):
         """Configure the session with headers that make it look like a real browser."""
@@ -65,6 +109,8 @@ class AmazonKDPParser:
 
         # Update session headers
         self.session.headers.update(headers)
+        self.session.proxies.update(self.proxy_manager.get_random_proxy())
+        print(self.session.proxies)
 
         # self.session.cookies.update({
         #     'session-id': f'{random.randint(100000000, 999999999)}',
@@ -160,6 +206,7 @@ class AmazonKDPParser:
         else:
             title = soup.title.string if soup.title else "No title found"
             logger.info(f"Successfully bypassed without captcha! Page title: {title}")
+            self._page_title = title if title != "No title found" else None
 
     def _get_rating_and_reviews_count(self, soup: BeautifulSoup) -> tuple[str | None, str | None]:
         """
@@ -239,7 +286,10 @@ class AmazonKDPParser:
                     review_content = review_content_span.find(class_='cr-original-review-content')
                     if not review_content:
                         review_content_div = review_content_span.find(
-                            'div', {'data-hook': 'review-collapsed', 'class': 'a-expander-content reviewText review-text-content a-expander-partial-collapse-content'}
+                            'div', {
+                                'data-hook': 'review-collapsed',
+                                'class': 'a-expander-content reviewText review-text-content a-expander-partial-collapse-content'
+                            }
                         )
                         if not review_content_div:
                             review_content = None
@@ -260,6 +310,18 @@ class AmazonKDPParser:
         """Parse the page and return the content."""
         soup = BeautifulSoup(page_content, 'html.parser')
         self._validate_response(soup)
+        if not self.HTML_PAGES_DATA.exists():
+            self.HTML_PAGES_DATA.mkdir()
+        if self._page_title:
+            content_filename = self.HTML_PAGES_DATA / f'{self._page_title}.html'
+        else:
+            match = re.search(r"/dp/([A-Z0-9]+)", url)
+            if match:
+                content_filename = match.group(1)
+            else:
+                content_filename = str(datetime.now())
+        with open(content_filename, 'w') as f:
+            f.write(page_content)
         try:
             rating, reviews_count = self._get_rating_and_reviews_count(soup)
         except Exception as e:
@@ -296,36 +358,12 @@ class AmazonKDPParser:
 def main():
     """Main function to demonstrate the parser with captcha avoidance."""
     parser = AmazonKDPParser()
-
-    # Warm up the session first
-    # parser.warm_up_session()
-
-    # Try to fetch the page
     url = "https://www.amazon.de/Lotti-Tomke-ebook/dp/B0F2Q6MDP4/ref=lp_6692295031_1_1?pf_rd_p=b7b797ed-078a-4a5b-91a4-303c74775994&pf_rd_r=283312WQ73W9KYP797HS&sbo=0oPp5w93/dZvu+v9k+4HBA=="
     html_content = parser.fetch_page(url)
 
-    # with open("amazon_success.html", "r") as f:
-    #     html_content = f.read()
 
     data = parser._parse_page(html_content)
 
-    # if html_content:
-    #     soup = BeautifulSoup(html_content, 'html.parser')
-    #
-    #     # Check if we got a captcha page
-    #     captcha_text = soup.select_one('.a-last')
-    #     if captcha_text and "robot" in captcha_text.text:
-    #         logger.warning("Still got captcha page despite our efforts")
-    #     else:
-    #         title = soup.title.string if soup.title else "No title found"
-    #         logger.info(f"Successfully bypassed captcha! Page title: {title}")
-    #
-    #         # Save the HTML for inspection
-    #         with open("amazon_success.html", "wb") as f:
-    #             f.write(html_content)
-    #             logger.info("Saved HTML content to amazon_success.html")
-    # else:
-    #     logger.error("Failed to fetch page, all methods exhausted")
 
 
 if __name__ == "__main__":

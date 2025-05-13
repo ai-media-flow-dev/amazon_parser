@@ -2,8 +2,11 @@
 Tasks for asynchronous processing of book parsing
 """
 from datetime import datetime
+import logging
 from .models import Book
 from .utils import AmazonKDPParser
+
+logger = logging.getLogger(__name__)
 
 def parse_single_book(book_id):
     """
@@ -27,7 +30,7 @@ def parse_single_book(book_id):
         book.save()
         return True
     except Exception as e:
-        print(f"Error parsing book {book_id}: {str(e)}")
+        logger.error(f"Error parsing book {book_id}", exc_info=e)
         book.parse_status = 'error'
         book.save()
         return False

@@ -51,3 +51,5 @@ kdp_royalties.csv
 Thumbs.db
 *db.sqlite3*
 ./amazon_parser/db.sqlite3
+amazon_parser/data
+external/data
