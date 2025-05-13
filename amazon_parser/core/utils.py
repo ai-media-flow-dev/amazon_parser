@@ -222,7 +222,7 @@ class AmazonKDPParser:
                 rating = None
             reviews_count_span = customer_reviews_div.find(id="acrCustomerReviewText")
             if reviews_count_span:
-                reviews_count = float(reviews_count_span.text.strip().split()[0])
+                reviews_count = float(reviews_count_span.text.strip().split()[0].replace(',', ''))
             else:
                 logger.warning("No reviews count span found")
                 reviews_count = None
@@ -236,10 +236,11 @@ class AmazonKDPParser:
         :return: list of best sellers ranks values
         """
         def _parse_rank(rank_text: str) -> dict:
+            rank_text = rank_text.replace(',', '')
             digit = re.search(r'\d+', rank_text)
             if digit:
                 place = digit.group()
-                rank_name = rank_text.replace(place, '').strip()
+                rank_name = rank_text.replace(place, '').replace("#", '').strip()
                 return {'place': place, 'rank_name': rank_name}
             else:
                 return {'place': None, 'rank_name': rank_text}

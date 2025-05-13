@@ -1,3 +1,4 @@
+import re
 from django import forms
 from .models import Book, BookSeries
 
@@ -8,20 +9,28 @@ class BookForm(forms.ModelForm):
         required=False,
         widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
-    url = forms.URLField(
+    book_id = forms.CharField(
+        label='Book ID',
         max_length=1000,
-        widget=forms.URLInput(attrs={'class': 'form-control'}),
+        widget=forms.TextInput(attrs={'class': 'form-control'}),
     )
 
-    def clean_url(self) -> str:
-        url = self.cleaned_data.get('url')
-        if url and not url.endswith('?language=en_GB'):
-            raise forms.ValidationError('URL must end with ?language=en_GB')
-        return url
+    def clean(self) -> str:
+        book_id = self.cleaned_data.get('book_id')
+        language = self.cleaned_data.get('language')
+        if language == 'en':
+            language = 'com'
+        complete_url = f'https://www.amazon.{language}/dp/{book_id}?language=en_GB'
+        self.cleaned_data['url'] = complete_url
+        return self.cleaned_data
+        # match = re.search(r'(https://www\.amazon\.[^/]+/dp/\w+)', url)
+        # if match:
+            # return match.group(1) + '/?language=en_GB'
+        # raise forms.ValidationError('URL must be a valid Amazon product URL')
 
     class Meta:
         model = Book
-        fields = ['name', 'url', 'series_title', 'language']
+        fields = ['name', 'book_id', 'series_title', 'language']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control'}),
             'language': forms.Select(attrs={'class': 'form-control'}),

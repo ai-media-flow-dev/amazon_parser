@@ -22,12 +22,12 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label for="{{ form.url.id_for_label }}" class="form-label">URL</label>
-                        {{ form.url }}
-                        {% if form.url.errors %}
-                            <div class="text-danger">{{ form.url.errors }}</div>
+                        <label for="{{ form.book_id.id_for_label }}" class="form-label">Book ID</label>
+                        {{ form.book_id }}
+                        {% if form.book_id.errors %}
+                            <div class="text-danger">{{ form.book_id.errors }}</div>
                         {% endif %}
-                        <div class="form-text">Enter the full URL to the book page</div>
+                        <div class="form-text">Введите ID книги из Amazon (ASIN)</div>
                     </div>
                     
                     <div class="mb-3">
@@ -44,6 +44,14 @@
                         {% if form.language.errors %}
                             <div class="text-danger">{{ form.language.errors }}</div>
                         {% endif %}
+                        <div class="form-text">Важно, чтобы язык соответствовал локали языка в URL строке. Иначе результаты парсинга будут некорректными.</div>
+                        <div class="form-text">en - для Amazon.com</div>
+                        <div class="form-text">de - для Amazon.de</div>
+                        <div class="form-text">fr - для Amazon.fr</div>
+                        <div class="form-text">es - для Amazon.es</div>
+                        <div class="form-text">it - для Amazon.it</div>
+                        <div class="form-text">nl - для Amazon.nl</div>
+                        <div class="form-text">mx - для Amazon.mx</div>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
