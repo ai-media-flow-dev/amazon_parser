@@ -11,7 +11,10 @@
         <a href="{% url 'add_book' %}" class="btn btn-primary">Add Book</a>
         <form method="post" action="{% url 'parse_all_books' %}" class="d-inline">
             {% csrf_token %}
-            <button type="submit" class="btn btn-success">Parse All Books</button>
+            <button type="submit" class="btn btn-success" {% if parsing_in_progress %}disabled{% endif %}>Parse All Books</button>
+            {% if parsing_in_progress %}
+                <div class="text-danger">Parsing in progress...</div>
+            {% endif %}
         </form>
     </div>
 </div>

@@ -3,6 +3,8 @@ Tasks for asynchronous processing of book parsing
 """
 from datetime import datetime
 import logging
+
+from .cache_utils import set_parsing_status
 from .models import Book
 from .utils import AmazonKDPParser
 
@@ -37,11 +39,14 @@ def parse_single_book(book_id):
 
 def parse_all_books():
     """
-    Parse all books in the database
+    Parse all books in separate process
     """
-    books = Book.objects.all()
-    
-    for book in books:
-        parse_single_book(book.id)
-    
-    return True 
+    try:
+        from django import db
+        db.connection.close()
+        set_parsing_status(True)
+        books = Book.objects.all()
+        for book in books:
+            parse_single_book(book.id)
+    finally:
+        set_parsing_status(False)

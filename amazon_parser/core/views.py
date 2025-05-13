@@ -1,10 +1,13 @@
 import logging
+from multiprocessing import Process
 from django.db import IntegrityError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db.models import Q
+
+from .cache_utils import get_parsing_status
 from .models import Book, BookSeries, Language
 from .forms import BookForm
 from .tasks import parse_single_book, parse_all_books as parse_all_books_task
@@ -63,6 +66,7 @@ def book_list(request):
         'all_series': all_series,
         'language_filter': language_filter,
         'language_choices': Language.choices,
+        'parsing_in_progress': get_parsing_status(),
     }
     
     return render(request, 'core/book_list.html', context)
@@ -117,11 +121,13 @@ def parse_book(request, pk):
 
 @require_POST
 def parse_all_books(request):
+    if get_parsing_status():
+        messages.info(request, 'Parsing already in progress')
+        return redirect('book_list')
+    
     books = Book.objects.all()
-    
-    # Call the parse all function
-    parse_all_books_task()
-    
+    process = Process(target=parse_all_books_task, daemon=True)
+    process.start()
     messages.success(request, f'Parsing started for all {books.count()} books')
     return redirect('book_list')
 
