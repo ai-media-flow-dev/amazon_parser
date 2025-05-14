@@ -52,7 +52,7 @@ def book_list(request):
     # Get all series for the filter dropdown
     all_series = BookSeries.objects.values_list('title', flat=True).distinct()
     
-    paginator = Paginator(books, 10)
+    paginator = Paginator(books, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
