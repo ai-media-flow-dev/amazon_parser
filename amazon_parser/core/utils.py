@@ -206,7 +206,7 @@ class AmazonKDPParser:
         else:
             title = soup.title.string if soup.title else "No title found"
             logger.info(f"Successfully bypassed without captcha! Page title: {title}")
-            self._page_title = title if title != "No title found" else None
+            self._page_title = title[:20].strip() if title != "No title found" else None
 
     def _get_rating_and_reviews_count(self, soup: BeautifulSoup) -> tuple[str | None, str | None]:
         """
@@ -316,11 +316,7 @@ class AmazonKDPParser:
         if self._page_title:
             content_filename = self.HTML_PAGES_DATA / f'{self._page_title}.html'
         else:
-            match = re.search(r"/dp/([A-Z0-9]+)", url)
-            if match:
-                content_filename = match.group(1)
-            else:
-                content_filename = str(datetime.now())
+            content_filename = str(datetime.now())
         with open(content_filename, 'w') as f:
             f.write(page_content)
         try:
@@ -355,17 +351,3 @@ class AmazonKDPParser:
         else:
             return self._parse_page(html_content)
 
-
-def main():
-    """Main function to demonstrate the parser with captcha avoidance."""
-    parser = AmazonKDPParser()
-    url = "https://www.amazon.de/Lotti-Tomke-ebook/dp/B0F2Q6MDP4/ref=lp_6692295031_1_1?pf_rd_p=b7b797ed-078a-4a5b-91a4-303c74775994&pf_rd_r=283312WQ73W9KYP797HS&sbo=0oPp5w93/dZvu+v9k+4HBA=="
-    html_content = parser.fetch_page(url)
-
-
-    data = parser._parse_page(html_content)
-
-
-
-if __name__ == "__main__":
-    main()
