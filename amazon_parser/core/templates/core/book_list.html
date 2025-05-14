@@ -24,47 +24,31 @@
     <div class="card-body">
         <form method="get" class="row g-3">
             <div class="col-md-2">
-                <label for="search" class="form-label">Search</label>
-                <input type="text" class="form-control" id="search" name="search" value="{{ search_query }}" placeholder="Search books or series...">
+                <label for="{{ filter.form.search.id_for_label }}" class="form-label">Search</label>
+                {{ filter.form.search }}
             </div>
             <div class="col-md-2">
-                <label for="series" class="form-label">Series</label>
-                <select class="form-select" id="series" name="series">
-                    <option value="">All Series</option>
-                    {% for series in all_series %}
-                        <option value="{{ series }}" {% if series == series_filter %}selected{% endif %}>{{ series }}</option>
-                    {% endfor %}
+                <label for="{{ filter.form.series.id_for_label }}" class="form-label">Series</label>
+                {{ filter.form.series }}
                 </select>
             </div>
             <div class="col-md-2">
-                <label for="language" class="form-label">Language</label>
-                <select class="form-select" id="language" name="language">
-                    <option value="">All Languages</option>
-                    {% for lang_code, lang_name in language_choices %}
-                        <option value="{{ lang_code }}" {% if lang_code == language_filter %}selected{% endif %}>{{ lang_name }}</option>
-                    {% endfor %}
-                </select>
+                <label for="{{ filter.form.language.id_for_label }}" class="form-label">Language</label>
+                {{ filter.form.language }}
             </div>
             <div class="col-md-2">
-                <label for="date_from" class="form-label">Date From</label>
-                <input type="date" class="form-control" id="date_from" name="date_from" value="{{ date_from }}">
+                <label for="{{ filter.form.order.id_for_label }}" class="form-label">Sort By</label>
+                {{ filter.form.order }}
             </div>
             <div class="col-md-2">
-                <label for="date_to" class="form-label">Date To</label>
-                <input type="date" class="form-control" id="date_to" name="date_to" value="{{ date_to }}">
+                <label for="{{ filter.form.date_from.id_for_label }}" class="form-label">Date From</label>
+                {{ filter.form.date_from }}
             </div>
             <div class="col-md-2">
-                <label for="sort" class="form-label">Sort By</label>
-                <select class="form-select" id="sort" name="sort">
-                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
-                    <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Oldest First</option>
-                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name (A-Z)</option>
-                    <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>Name (Z-A)</option>
-                    <option value="series__title" {% if sort_by == 'series__title' %}selected{% endif %}>Series (A-Z)</option>
-                    <option value="-series__title" {% if sort_by == '-series__title' %}selected{% endif %}>Series (Z-A)</option>
-                </select>
+                <label for="{{ filter.form.date_to.id_for_label }}" class="form-label">Date To</label>
+                {{ filter.form.date_to }}
             </div>
-            <div class="col-12">
+            <div class="col-md-12">
                 <button type="submit" class="btn btn-primary">Apply Filters</button>
                 <a href="{% url 'book_list' %}" class="btn btn-secondary">Clear Filters</a>
             </div>
@@ -80,10 +64,37 @@
                     <th>Name</th>
                     <th>Series</th>
                     <th>Language</th>
-                    <th>Rating</th>
-                    <th>Number of Ratings</th>
+                    <th>
+                        <a href="?order={% if request.GET.order == 'rating' %}-{% endif %}rating">
+                            Rating
+                            {% if request.GET.order == 'rating' %}
+                                <i class="bi bi-arrow-up"></i>
+                            {% elif request.GET.order == '-rating' %}
+                                <i class="bi bi-arrow-down"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="?order={% if request.GET.order == 'reviews_count' %}-{% endif %}reviews_count">
+                            Number of Ratings
+                            {% if request.GET.order == 'reviews_count' %}
+                                <i class="bi bi-arrow-up"></i>
+                            {% elif request.GET.order == '-reviews_count' %}
+                                <i class="bi bi-arrow-down"></i>
+                            {% endif %}
+                        </a>
+                    </th>
                     <th>Best Seller Ranks</th>
-                    <th>Popular Reviews</th>
+                    <th>
+                        <a href="?order={% if request.GET.order == 'popular_reviews' %}-{% endif %}popular_reviews">
+                            Popular Reviews
+                            {% if request.GET.order == 'popular_reviews' %}
+                                <i class="bi bi-arrow-up"></i>
+                            {% elif request.GET.order == '-popular_reviews' %}
+                            <i class="bi bi-arrow-down"></i>
+                            {% endif %}
+                        </a>
+                    </th>
                     <th>Parsed At</th>
                     <th>Parse Status</th>
                     <th>Created</th>
@@ -149,10 +160,10 @@
         <ul class="pagination justify-content-center">
             {% if page_obj.has_previous %}
                 <li class="page-item">
-                    <a class="page-link" href="?page=1&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">&laquo; first</a>
+                    <a class="page-link" href="?{% if filter.form.data %}{{ filter.form.data.urlencode }}&{% endif %}page=1">&laquo; first</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">previous</a>
+                    <a class="page-link" href="?{% if filter.form.data %}{{ filter.form.data.urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}">previous</a>
                 </li>
             {% endif %}
 
@@ -163,17 +174,17 @@
                     </li>
                 {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
                     <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">{{ num }}</a>
+                        <a class="page-link" href="?{% if filter.form.data %}{{ filter.form.data.urlencode }}&{% endif %}page={{ num }}">{{ num }}</a>
                     </li>
                 {% endif %}
             {% endfor %}
 
             {% if page_obj.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">next</a>
+                    <a class="page-link" href="?{% if filter.form.data %}{{ filter.form.data.urlencode }}&{% endif %}page={{ page_obj.next_page_number }}">next</a>
                 </li>
                 <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&search={{ search_query }}&series={{ series_filter }}&language={{ language_filter }}&date_from={{ date_from }}&date_to={{ date_to }}&sort={{ sort_by }}">last &raquo;</a>
+                    <a class="page-link" href="?{% if filter.form.data %}{{ filter.form.data.urlencode }}&{% endif %}page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
                 </li>
             {% endif %}
         </ul>

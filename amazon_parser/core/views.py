@@ -1,55 +1,25 @@
 import logging
+
 from multiprocessing import Process
 from django.db import IntegrityError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
-from django.db.models import Q
 
 from .cache_utils import get_parsing_status
 from .models import Book, BookSeries, Language
 from .forms import BookForm
+from .filters import BookFilter
 from .tasks import parse_single_book, parse_all_books as parse_all_books_task
 
 logger = logging.getLogger(__name__)
 
 def book_list(request):
-    # Get filter parameters
-    search_query = request.GET.get('search', '')
-    series_filter = request.GET.get('series', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
-    sort_by = request.GET.get('sort', '-created_at')
-    language_filter = request.GET.get('language', '')
+    book_filter = BookFilter(request.GET, queryset=Book.objects.all())
     
-    # Start with all books
-    books = Book.objects.all()
+    books = book_filter.qs
     
-    # Apply filters
-    if search_query:
-        books = books.filter(Q(name__icontains=search_query) | Q(series__title__icontains=search_query))
-    
-    if series_filter:
-        books = books.filter(series__title=series_filter)
-    
-    if language_filter:
-        books = books.filter(language=language_filter)
-    
-    if date_from:
-        books = books.filter(created_at__gte=date_from)
-    
-    if date_to:
-        books = books.filter(created_at__lte=date_to)
-    
-    # Apply sorting
-    valid_sort_fields = ['created_at', '-created_at', 'name', '-name', 'series__title', '-series__title']
-    if sort_by in valid_sort_fields:
-        books = books.order_by(sort_by)
-    else:
-        books = books.order_by('-created_at')
-    
-    # Get all series for the filter dropdown
     all_series = BookSeries.objects.values_list('title', flat=True).distinct()
     
     paginator = Paginator(books, 50)
@@ -58,13 +28,8 @@ def book_list(request):
     
     context = {
         'page_obj': page_obj,
-        'search_query': search_query,
-        'series_filter': series_filter,
-        'date_from': date_from,
-        'date_to': date_to,
-        'sort_by': sort_by,
+        'filter': book_filter,
         'all_series': all_series,
-        'language_filter': language_filter,
         'language_choices': Language.choices,
         'parsing_in_progress': get_parsing_status(),
     }

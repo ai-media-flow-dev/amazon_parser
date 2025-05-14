@@ -11,4 +11,4 @@ def pprint(value):
         formatted_json = json.dumps(value, indent=2)
         return mark_safe(formatted_json)
     except:
-        return value 
+        return value
