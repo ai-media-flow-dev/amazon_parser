@@ -23,9 +23,6 @@ class BookForm(forms.ModelForm):
         complete_url = f'https://www.amazon.{language}/dp/{book_id}?language=en_GB'
         self.cleaned_data['url'] = complete_url
         return self.cleaned_data
-        # if match:
-            # return match.group(1) + '/?language=en_GB'
-        # raise forms.ValidationError('URL must be a valid Amazon product URL')
 
     class Meta:
         model = Book

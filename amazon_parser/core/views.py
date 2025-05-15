@@ -1,6 +1,7 @@
 import logging
 
 from multiprocessing import Process
+import re
 from django.db import IntegrityError
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
@@ -69,8 +70,24 @@ def edit_book(request, pk):
             form.save()
             messages.success(request, 'Book updated successfully!')
             return redirect('book_list')
+        else:
+            logger.error(f'An error occurred while editing a book', exc_info=form.errors)
+            messages.error(request, 'An error occurred while editing a book')
+            return render(request, 'core/edit_book.html', {'form': form, 'book': book})
     else:
-        form = BookForm(instance=book, initial={'series_title': book.series.title if book.series else ''})
+        match = re.search(r'/dp/([A-Z0-9]+)', book.url)
+        if match:
+            book_id = match.group(1)
+        else:
+            book_id = None
+
+        form = BookForm(
+            instance=book,
+            initial={
+                'series_title': book.series.title if book.series else '',
+                'book_id': book_id
+            }
+        )
     
     return render(request, 'core/edit_book.html', {'form': form, 'book': book})
 
