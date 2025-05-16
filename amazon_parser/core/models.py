@@ -19,7 +19,8 @@ class Language(models.TextChoices):
     DUTCH = 'nl'
     RUSSIAN = 'ru'
     JAPANESE = 'ja'
-
+    NORWAY = 'no'
+    SWEDEN = "se"
 
 class BookSeries(models.Model):
     title = models.CharField(max_length=255)

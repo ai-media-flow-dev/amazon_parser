@@ -18,7 +18,8 @@ class BookForm(forms.ModelForm):
     def clean(self) -> str:
         book_id = self.cleaned_data.get('book_id')
         language = self.cleaned_data.get('language')
-        if language == 'en':
+        list_of_incorrect_langs = ["en", "no", "ru"]
+        if language in list_of_incorrect_langs:
             language = 'com'
         complete_url = f'https://www.amazon.{language}/dp/{book_id}?language=en_GB'
         self.cleaned_data['url'] = complete_url
